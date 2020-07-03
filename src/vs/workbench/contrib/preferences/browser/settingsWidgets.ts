@@ -772,12 +772,13 @@ export class ObjectSettingWidget extends AbstractListSettingWidget<IObjectDataIt
 		const changedItem = { ...item };
 		const onKeyChange = (key: ObjectKey) => {
 			changedItem.key = key;
-			this.updateValueUsingSuggestion(key.data, item.value, newValue => {
-				if (this.shouldUseSuggestion(item.value, changedItem.value, newValue)) {
-					onValueChange(newValue);
-					renderLatestValue();
-				}
-			});
+
+			const suggestedValue = this.valueSuggester(key.data) ?? item.value;
+
+			if (this.shouldUseSuggestion(item.value, changedItem.value, suggestedValue)) {
+				onValueChange(suggestedValue);
+				renderLatestValue();
+			}
 		};
 		const onValueChange = (value: ObjectValue) => {
 			changedItem.value = value;
@@ -962,14 +963,9 @@ export class ObjectSettingWidget extends AbstractListSettingWidget<IObjectDataIt
 		return { widget: selectBox, element: wrapper };
 	}
 
-	@debounce(300)
-	private updateValueUsingSuggestion(key: string, defaultValue: ObjectValue, onUpdate: (value: ObjectValue) => void) {
-		const suggestion = this.valueSuggester(key);
-		onUpdate(suggestion ?? defaultValue);
-	}
-
 	private shouldUseSuggestion(originalValue: ObjectValue, previousValue: ObjectValue, newValue: ObjectValue): boolean {
-		if (previousValue === newValue) {
+		// suggestion is exactly the same
+		if (newValue.type !== 'enum' && newValue.type === previousValue.type && newValue.data === previousValue.data) {
 			return false;
 		}
 
